@@ -1,2 +1,11 @@
+# Build folder
 dist
+
+# Dependencies
 node_modules
+
+# .env vars
+.env
+
+# Puppeteer cache
+.cache
