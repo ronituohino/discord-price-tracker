@@ -1,0 +1,21 @@
+{
+  "name": "price-tracker",
+  "version": "1.0.0",
+  "description": "Price tracking Discord bot",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node --esm src/index.ts"
+  },
+  "author": "Roni Tuohino",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.11.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  }
+}
