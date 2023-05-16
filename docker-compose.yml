@@ -1,14 +1,16 @@
 version: '3.8'
 
 services:
-  tracker:
-    image: tracker
+  price-tracker:
+    image: price-tracker
     build: ./
-    container_name: tracker
+    container_name: price-tracker
+    env_file:
+      - .env
 
-  tracker-db:
+  price-tracker-db:
     image: postgres:15.2-alpine
-    container_name: tracker-db
+    container_name: price-tracker-db
     environment:
       - POSTGRES_PASSWORD=averygoodpassowrd!
     volumes:
