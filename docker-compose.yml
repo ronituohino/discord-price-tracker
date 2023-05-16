@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  tracker:
+    image: tracker
+    build: ./
+    container_name: tracker
+
+  tracker-db:
+    image: postgres:15.2-alpine
+    container_name: tracker-db
+    environment:
+      - POSTGRES_PASSWORD=averygoodpassowrd!
+    volumes:
+      - database:/var/lib/postgresql/data
+
+volumes:
+  database:
