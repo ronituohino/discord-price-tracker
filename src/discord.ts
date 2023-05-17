@@ -1,5 +1,12 @@
-import Discord from "discord.js";
-import { DBClient, addItem, removeItem, updateItem, getItems } from "./db.js";
+import Discord, { Client, Message } from "discord.js";
+import {
+  DBClient,
+  addItem,
+  removeItem,
+  updateItem,
+  getItems,
+  register,
+} from "./database/index.js";
 
 type Params = {
   token: string;
@@ -16,10 +23,10 @@ export function startClient({ token, dbClient }: Params) {
     console.log(`Logged in as: ${client.user.username}`);
   });
 
-  client.on("messageCreate", msg => {
-    if (msg.author.id != client.user.id) {
-      if (msg.content.length > 0 && msg.content.startsWith("/")) {
-        handleCommand(msg.content, dbClient);
+  client.on("messageCreate", message => {
+    if (message.author.id != client.user.id) {
+      if (message.content.length > 0 && message.content.startsWith("/")) {
+        handleCommand(client, message, dbClient);
       }
     }
   });
@@ -27,29 +34,45 @@ export function startClient({ token, dbClient }: Params) {
   client.login(token);
 }
 
-async function handleCommand(message: string, dbClient: DBClient) {
-  const [command, params] = parseMessage(message);
+async function handleCommand(
+  discordClient: Client,
+  message: Message,
+  dbClient: DBClient
+) {
+  const [command, params] = parseMessage(message.content);
 
   const func = {
+    // add user to database, /register
+    "/register": async () => {
+      const result = await register({
+        client: dbClient,
+        discordId: message.author.id,
+        discordName: message.author.username,
+      });
+      message.channel.send(`Created new user, hi ${result.discordname}!`);
+    },
+
     // add product to track, /add {name}, {url}
-    "/add": () => {
-      addItem({
+    "/add": async () => {
+      const result = await addItem({
+        discordId: message.author.id,
         client: dbClient,
         name: params[0],
         url: params[1],
         price: "0",
       });
+      console.log(result);
     },
     // remove product from tracking, /remove {name}
-    "/remove": () => {
+    "/remove": async () => {
       removeItem({ client: dbClient, name: params[0] });
     },
     // update product prices manually, /update
-    "/update": () => {
+    "/update": async () => {
       updateItem({ client: dbClient, name: params[0], price: "0" });
     },
     // list tracked products, /list
-    "/list": () => {
+    "/list": async () => {
       getItems();
     },
   }[command];

@@ -1,10 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { setupClient } from "./db.js";
-const dbClient = await setupClient({
-  connectionString: process.env["DATABASE_URL"],
-});
+import { setupClient } from "./database/index.js";
+const dbClient = await setupClient();
 
 import { startClient } from "./discord.js";
 startClient({ token: process.env["DISCORD_BOT_SECRET"], dbClient });
