@@ -17,4 +17,4 @@ COPY --from=builder /usr/src/app/node_modules ./node_modules
 
 USER user
 
-CMD ["npm", "run", "docker:node"]
+CMD ["npm", "run", "docker:start"]

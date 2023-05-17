@@ -8,10 +8,14 @@ services:
       dockerfile: ./Dockerfile.dev
     container_name: price-tracker-dev
     volumes:
-      - ./:usr/src/app
+      - ./:/usr/src/app
       - node_modules:/usr/src/app/node_modules
     env_file:
       - .env
+    environment:
+      - DATABASE_URL="postgresql://postgres:averygoodpassowrd!@price-tracker-db:5432/postgres"
+    depends_on:
+      - price-tracker-db
 
   price-tracker-db:
     image: postgres:15.2-alpine

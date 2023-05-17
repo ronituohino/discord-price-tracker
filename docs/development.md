@@ -1,10 +1,6 @@
 # Setting up the development environment
 
-Install dependencies with
-
-```
-npm i
-```
+The development environment has been dockerized.
 
 ## Create Discord bot
 
@@ -16,12 +12,33 @@ bot.
 
 ## .env
 
-Get bot token from the developer portal and set it into `DISCORD_BOT_SECRET`  
-Get postgres database connection string and set to `DATABASE_URL`
+Get bot token from the developer portal and set it into `DISCORD_BOT_SECRET`
 
 .env should look like this:
 
 ```
 DISCORD_BOT_SECRET="..."
-DATABASE_URL="..."
+```
+
+## Run the development environment
+
+Make sure you have [Node](https://nodejs.org/en) installed.  
+Install dependencies (linting and puppeteer cache):
+
+```
+npm i
+```
+
+Make sure you have [Docker](https://www.docker.com/) and
+[docker-compose](https://docs.docker.com/compose/) installed and then run:
+
+```
+npm run dev
+```
+
+If you install deps or something goes wrong and you need to rebuild the images,
+run:
+
+```
+npm run rebuild
 ```

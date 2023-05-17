@@ -6,4 +6,4 @@ COPY package* ./
 
 RUN npm install
 
-CMD ["npm", "run", "docker:nodemon"]
+CMD ["npm", "run", "docker:dev"]

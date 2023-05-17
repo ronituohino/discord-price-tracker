@@ -7,9 +7,10 @@
   "scripts": {
     "start": "docker-compose up",
     "dev": "docker-compose -f docker-compose.dev.yml up",
-    "docker:nodemon": "nodemon src",
+    "rebuild": "docker-compose -f docker-compose.dev.yml build",
+    "docker:dev": "nodemon --esm src/index.ts",
     "docker:build": "tsc",
-    "docker:node": "node index.js"
+    "docker:start": "node index.js"
   },
   "author": "Roni Tuohino",
   "license": "MIT",
