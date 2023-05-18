@@ -7,6 +7,7 @@ import { remove } from "./services/remove.js";
 import { update } from "./services/update.js";
 import { register } from "./services/register.js";
 import { list } from "./services/list.js";
+import { history } from "./services/history.js";
 
 type Params = {
   token: string;
@@ -20,7 +21,9 @@ export function startClient({ token, dbClient }: Params) {
 
   // Add events to client
   client.on("ready", () => {
-    console.log(`Logged in as: ${client.user.username}`);
+    console.log(
+      `Logged in as: ${client.user.username}, use /help to view commands.`
+    );
   });
 
   client.on("messageCreate", (message) => {
@@ -34,6 +37,16 @@ export function startClient({ token, dbClient }: Params) {
   client.login(token);
 }
 
+const commands = {
+  "/help": "view this output",
+  "/register": "create account to track products",
+  "/add {name}, {url}": "add product to track",
+  "/remove {name}": "remove product from tracking",
+  "/update": "manually update product prices",
+  "/list": "list tracked products",
+  "/history {name}": "view price history of the product",
+};
+
 async function handleCommand(
   discordClient: Client,
   message: Message,
@@ -42,7 +55,14 @@ async function handleCommand(
   const [command, params] = parseMessage(message.content);
 
   const func = {
-    // add user to database, /register
+    "/help": () => {
+      const commandsString = Object.keys(commands)
+        .map((key) => `${key} - ${commands[key]}`)
+        .join("\n");
+      message.channel.send(
+        `Welcome, the available commands are as follows:\n${commandsString}`
+      );
+    },
     "/register": async () => {
       const result = await register({
         databaseClient,
@@ -68,8 +88,6 @@ async function handleCommand(
           assertUnreachable(result.status);
       }
     },
-
-    // add product to track, /add {name}, {url}
     "/add": async () => {
       const result = await add({
         databaseClient,
@@ -110,8 +128,6 @@ async function handleCommand(
           assertUnreachable(result.status);
       }
     },
-
-    // remove product from tracking, /remove {name}
     "/remove": async () => {
       const result = await remove({
         databaseClient: databaseClient,
@@ -133,7 +149,7 @@ async function handleCommand(
           break;
         case "name_missing":
           message.channel.send(
-            "You need to provide a name for the product: /add {name}, {url}"
+            "You need to provide a name for the product: /remove {name}"
           );
           break;
         case "error":
@@ -143,8 +159,6 @@ async function handleCommand(
           assertUnreachable(result.status);
       }
     },
-
-    // update product prices manually, /update
     "/update": async () => {
       try {
         const result = await update({
@@ -175,8 +189,6 @@ async function handleCommand(
         message.channel.send(`Something went wrong: ${error}`);
       }
     },
-
-    // list tracked products, /list
     "/list": async () => {
       const result = await list({
         databaseClient: databaseClient,
@@ -191,7 +203,7 @@ async function handleCommand(
                 (product) => `${product.name}, ${product.price}, ${product.url}`
               )
               .join("\n");
-            message.channel.send(`Your tracked products:\n ${productsString}`);
+            message.channel.send(`Your tracked products:\n${productsString}`);
           } else {
             message.channel.send("You aren't tracking any products!");
           }
@@ -204,6 +216,41 @@ async function handleCommand(
         case "error":
           message.channel.send(`Something went wrong: ${result.error}`);
           break;
+        default:
+          assertUnreachable(result.status);
+      }
+    },
+    "/history": async () => {
+      const result = await history({
+        databaseClient,
+        discordId: message.author.id,
+        name: params[0],
+      });
+
+      switch (result.status) {
+        case "success":
+          const pricesString = result.product.pricePoints
+            .map((price) => `${price.createdAt} - ${price.price}`)
+            .join("\n");
+          message.channel.send(
+            `${result.product.name} has the following price history:\n${pricesString}`
+          );
+          break;
+        case "name_missing":
+          message.channel.send(
+            "You need to provide a name for the product: /history {name}"
+          );
+          break;
+        case "not_registered":
+          message.channel.send(
+            "You need to /register and track products to view history."
+          );
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+        default:
+          assertUnreachable(result.status);
       }
     },
   }[command];

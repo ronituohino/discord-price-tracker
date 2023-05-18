@@ -18,7 +18,7 @@ export async function list({
 }: Params): Promise<Return> {
   try {
     const userId = await getUserId(databaseClient, discordId);
-    if (userId === undefined) {
+    if (!userId) {
       return { status: "not_registered" };
     }
 

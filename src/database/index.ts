@@ -1,6 +1,6 @@
 import pg, { QueryResult } from "pg";
 import fs from "fs";
-import type { Product } from "../types.js";
+import type { Product, ProductWithFullHistory, PricePoint } from "../types.js";
 
 export type DataBaseClient = pg.Client;
 
@@ -45,28 +45,28 @@ export const getUserId: GetUserId = async (databaseClient, discordId) => {
     await databaseClient.query("SELECT id FROM Users WHERE discordid=$1", [
       discordId,
     ])
-  ).rows[0]?.id;
+  )?.rows[0]?.id;
 };
 
 type AddProduct = (
   databaseClient: DataBaseClient,
   userId: number,
   name: string,
-  url: string,
-  price: string
-) => Promise<QueryResult>;
+  url: string
+) => Promise<number>;
 
 export const addProduct: AddProduct = async (
   databaseClient,
   userId,
   name,
-  url,
-  price
+  url
 ) => {
-  return await databaseClient.query(
-    "INSERT INTO Products(user_id, name, url, price) VALUES($1, $2, $3, $4)",
-    [userId, name, url, price]
-  );
+  return (
+    await databaseClient.query(
+      "INSERT INTO Products(user_id, name, url) VALUES($1, $2, $3) RETURNING id",
+      [userId, name, url]
+    )
+  )?.rows[0]?.id;
 };
 
 type RemoveProduct = (
@@ -94,38 +94,87 @@ type GetProducts = (
 ) => Promise<[Product]>;
 
 export const getProducts: GetProducts = async (databaseClient, userId) => {
-  const results = await databaseClient.query(
-    "SELECT * FROM Products WHERE user_id=$1",
-    [userId]
-  );
-
-  const products = results?.rows.map((product) => {
+  const products = (
+    await databaseClient.query(
+      `SELECT A.id, A.user_id, A.name, A.url, A.created_at, B.price 
+    FROM Products A, PricePoints B 
+    WHERE A.user_id=$1 AND A.current_price_id=B.id`,
+      [userId]
+    )
+  )?.rows.map((product) => {
     return {
+      id: product.id,
       userId: product.user_id,
       name: product.name,
       url: product.url,
       price: product.price,
-      ceratedAt: product.created_at,
+      createdAt: product.created_at,
     };
   }) as unknown as [Product];
+
   return products;
 };
 
-type UpdatePrice = (
+type GetProductWithFullHistory = (
   databaseClient: DataBaseClient,
   userId: number,
-  name: string,
+  name: string
+) => Promise<ProductWithFullHistory>;
+
+export const getProductWithFullHistory: GetProductWithFullHistory = async (
+  databaseClient,
+  userId,
+  name
+) => {
+  const product = (
+    await databaseClient.query(
+      "SELECT id, user_id, name, url, created_at FROM Products WHERE user_id=$1 AND name=$2",
+      [userId, name]
+    )
+  )?.rows[0];
+
+  const prices = (
+    await databaseClient.query(
+      "SELECT price, created_at FROM PricePoints WHERE product_id=$1",
+      [product.id]
+    )
+  )?.rows.map((price) => {
+    return {
+      price: price.price,
+      createdAt: product.created_at,
+    };
+  }) as unknown as [PricePoint];
+
+  return {
+    id: product.id,
+    userId: product.user_id,
+    name: product.name,
+    url: product.url,
+    pricePoints: prices,
+    createdAt: product.created_at,
+  } as unknown as ProductWithFullHistory;
+};
+
+type AddPricePoint = (
+  databaseClient: DataBaseClient,
+  productId: number,
   price: string
 ) => Promise<QueryResult>;
 
-export const updatePrice: UpdatePrice = async (
+export const addPricePoint: AddPricePoint = async (
   databaseClient,
-  userId,
-  name,
+  productId,
   price
 ) => {
+  const pricePointId = (
+    await databaseClient.query(
+      "INSERT INTO PricePoints(product_id, price) VALUES($1, $2) RETURNING id",
+      [productId, price]
+    )
+  )?.rows[0]?.id;
+
   return await databaseClient.query(
-    "UPDATE Products SET price=$1 WHERE user_id=$2 AND name=$3",
-    [price, userId, name]
+    "UPDATE Products SET current_price_id=$1 WHERE id=$2",
+    [pricePointId, productId]
   );
 };

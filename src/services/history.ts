@@ -1,6 +1,9 @@
-import { DataBaseClient, removeProduct } from "../database/index.js";
-
-import { getUserId } from "../database/index.js";
+import {
+  DataBaseClient,
+  getProductWithFullHistory,
+  getUserId,
+} from "../database/index.js";
+import type { ProductWithFullHistory } from "../types.js";
 
 type Params = {
   databaseClient: DataBaseClient;
@@ -9,16 +12,12 @@ type Params = {
 };
 
 type Return = {
-  status:
-    | "success"
-    | "name_missing"
-    | "not_registered"
-    | "product_not_found"
-    | "error";
+  status: "success" | "name_missing" | "not_registered" | "error";
+  product?: ProductWithFullHistory;
   error?: Error;
 };
 
-export async function remove({
+export async function history({
   databaseClient,
   discordId,
   name,
@@ -27,18 +26,18 @@ export async function remove({
     if (!name) {
       return { status: "name_missing" };
     }
+
     const userId = await getUserId(databaseClient, discordId);
     if (!userId) {
       return { status: "not_registered" };
     }
 
-    const rowCount = await removeProduct(databaseClient, userId, name);
-
-    if (rowCount > 0) {
-      return { status: "success" };
-    } else {
-      return { status: "product_not_found" };
-    }
+    const product = await getProductWithFullHistory(
+      databaseClient,
+      userId,
+      name
+    );
+    return { status: "success", product };
   } catch (error) {
     return { status: "error", error };
   }

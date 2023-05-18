@@ -1,4 +1,4 @@
-import type { DataBaseClient } from "../database/index.js";
+import { DataBaseClient, addPricePoint } from "../database/index.js";
 
 import { getProductPrice } from "../scrapers/index.js";
 import { addProduct } from "../database/index.js";
@@ -48,7 +48,8 @@ export async function add({
       return { status: "unable_to_scrape" };
     }
 
-    await addProduct(databaseClient, userId, name, url, price);
+    const productId = await addProduct(databaseClient, userId, name, url);
+    await addPricePoint(databaseClient, productId, price);
     return { status: "success" };
   } catch (error) {
     if (error.toString().startsWith("error: duplicate key")) {
