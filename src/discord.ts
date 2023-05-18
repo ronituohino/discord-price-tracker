@@ -1,17 +1,16 @@
 import Discord, { Client, Message } from "discord.js";
-import {
-  DBClient,
-  addProduct,
-  removeProduct,
-  updatePrice,
-  getProducts,
-  register,
-} from "./database/index.js";
+import type { DataBaseClient } from "./database/index.js";
 import { assertUnreachable } from "./types.js";
+
+import { add } from "./services/add.js";
+import { remove } from "./services/remove.js";
+import { update } from "./services/update.js";
+import { register } from "./services/register.js";
+import { list } from "./services/list.js";
 
 type Params = {
   token: string;
-  dbClient: DBClient;
+  dbClient: DataBaseClient;
 };
 
 export function startClient({ token, dbClient }: Params) {
@@ -24,7 +23,7 @@ export function startClient({ token, dbClient }: Params) {
     console.log(`Logged in as: ${client.user.username}`);
   });
 
-  client.on("messageCreate", message => {
+  client.on("messageCreate", (message) => {
     if (message.author.id != client.user.id) {
       if (message.content.length > 0 && message.content.startsWith("/")) {
         handleCommand(client, message, dbClient);
@@ -38,7 +37,7 @@ export function startClient({ token, dbClient }: Params) {
 async function handleCommand(
   discordClient: Client,
   message: Message,
-  dbClient: DBClient
+  databaseClient: DataBaseClient
 ) {
   const [command, params] = parseMessage(message.content);
 
@@ -46,12 +45,12 @@ async function handleCommand(
     // add user to database, /register
     "/register": async () => {
       const result = await register({
-        client: dbClient,
+        databaseClient,
         discordId: message.author.id,
         discordName: message.author.username,
       });
 
-      switch (result.state) {
+      switch (result.status) {
         case "success":
           message.channel.send(
             `Created new user, hi ${message.author.username}!`
@@ -66,21 +65,20 @@ async function handleCommand(
           message.channel.send(`Something went wrong: ${result.error}`);
           break;
         default:
-          assertUnreachable(result.state);
+          assertUnreachable(result.status);
       }
     },
 
     // add product to track, /add {name}, {url}
     "/add": async () => {
-      const result = await addProduct({
+      const result = await add({
+        databaseClient,
         discordId: message.author.id,
-        client: dbClient,
-        name: params[0].trim(),
-        url: params[1].trim(),
-        price: "0",
+        name: params[0],
+        url: params[1],
       });
 
-      switch (result.state) {
+      switch (result.status) {
         case "success":
           message.channel.send(`Tracking ${params[0]}!`);
           break;
@@ -100,23 +98,28 @@ async function handleCommand(
             "You need to provide a url for the product: /add {name}, {url}"
           );
           break;
+        case "unable_to_scrape":
+          message.channel.send(
+            "Product not tracked, because I am unable to scrape the price."
+          );
+          break;
         case "error":
           message.channel.send(`Something went wrong: ${result.error}`);
           break;
         default:
-          assertUnreachable(result.state);
+          assertUnreachable(result.status);
       }
     },
 
     // remove product from tracking, /remove {name}
     "/remove": async () => {
-      const result = await removeProduct({
-        client: dbClient,
+      const result = await remove({
+        databaseClient: databaseClient,
         name: params[0],
         discordId: message.author.id,
       });
 
-      switch (result.state) {
+      switch (result.status) {
         case "success":
           message.channel.send(`No longer tracking ${params[0]}.`);
           break;
@@ -137,54 +140,55 @@ async function handleCommand(
           message.channel.send(`Something went wrong: ${result.error}`);
           break;
         default:
-          assertUnreachable(result.state);
+          assertUnreachable(result.status);
       }
     },
 
     // update product prices manually, /update
     "/update": async () => {
-      const result = await updatePrice({
-        client: dbClient,
-        discordId: message.author.id,
-        name: params[0],
-        price: "10 €",
-      });
+      try {
+        const result = await update({
+          databaseClient: databaseClient,
+          discordId: message.author.id,
+        });
 
-      switch (result.state) {
-        case "success":
-          message.channel.send(`Product price updated.`);
-          break;
-        case "not_registered":
-          message.channel.send(
-            `You need to /register and track something to update product prices.`
-          );
-          break;
-        case "name_missing":
-          message.channel.send(
-            "You need to provide a name for the product: /add {name}, {url}"
-          );
-          break;
-        case "error":
-          message.channel.send(`Something went wrong: ${result.error}`);
-          break;
-        default:
-          assertUnreachable(result.state);
+        switch (result.status) {
+          case "success":
+            if (result.amount && result.amount > 0) {
+              message.channel.send("Product prices updated.");
+            } else {
+              message.channel.send("You aren't tracking any products.");
+            }
+            break;
+          case "not_registered":
+            message.channel.send(
+              `You need to /register and track something to update product prices.`
+            );
+            break;
+          case "error":
+            message.channel.send(`Something went wrong: ${result.error}`);
+            break;
+          default:
+            assertUnreachable(result.status);
+        }
+      } catch (error) {
+        message.channel.send(`Something went wrong: ${error}`);
       }
     },
 
     // list tracked products, /list
     "/list": async () => {
-      const result = await getProducts({
-        client: dbClient,
+      const result = await list({
+        databaseClient: databaseClient,
         discordId: message.author.id,
       });
 
-      switch (result.state) {
+      switch (result.status) {
         case "success":
           if (result.products.length > 0) {
             const productsString = result.products
               .map(
-                product => `${product.name}, ${product.price}, ${product.url}`
+                (product) => `${product.name}, ${product.price}, ${product.url}`
               )
               .join("\n");
             message.channel.send(`Your tracked products:\n ${productsString}`);
@@ -215,6 +219,6 @@ async function handleCommand(
 function parseMessage(message: string): [string, string | string[]] {
   const [command, ...rest] = message.split(" ");
   const tempParams = rest.join(" ").split(",");
-  const params = tempParams.map(param => param.trim());
+  const params = tempParams.map((param) => param.trim());
   return [command, params];
 }

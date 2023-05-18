@@ -1,18 +1,22 @@
 import puppeteer from "puppeteer";
-import type { ScraperParams, ScraperReturnValue } from "./index.js";
+import type { UrlMatcher, Scraper } from "./index.js";
 
-export async function jimms({
-  productPageUrl,
-}: ScraperParams): Promise<ScraperReturnValue> {
-  const browser = await puppeteer.launch({ headless: true });
+export const jimmsUrl: UrlMatcher = (url) => {
+  return url.startsWith("https://www.jimms.fi");
+};
+
+export const jimms: Scraper = async (productPageUrl) => {
+  const browser = await puppeteer.launch({
+    headless: "new",
+    executablePath: process.env.CHROMIUM_PATH,
+    args: ["--no-sandbox"],
+  });
   const page = await browser.newPage();
 
   await page.goto(productPageUrl);
   const element = await page.waitForSelector(`span[itemprop="price"]`);
-  const price = await element.evaluate(el => el.textContent);
+  const price = await element.evaluate((el) => el.textContent);
 
   await browser.close();
-  return {
-    price,
-  };
-}
+  return price;
+};

@@ -1,8 +1,8 @@
-import pg from "pg";
+import pg, { QueryResult } from "pg";
 import fs from "fs";
-import { Product } from "../types.js";
+import type { Product } from "../types.js";
 
-export type DBClient = pg.Client;
+export type DataBaseClient = pg.Client;
 
 export async function setupClient() {
   const client = new pg.Client({
@@ -18,220 +18,114 @@ export async function setupClient() {
   return client;
 }
 
-type RegisterParams = {
-  client: DBClient;
-  discordId: string;
-  discordName: string;
-};
-type RegisterReturn = {
-  state: "success" | "duplicate" | "error";
-  error?: Error;
-};
+type RegisterToSystem = (
+  databaseClient: DataBaseClient,
+  discordId: string,
+  discordName: string
+) => Promise<QueryResult>;
 
-export async function register({
-  client,
+export const registerToSystem: RegisterToSystem = async (
+  databaseClient,
   discordId,
-  discordName,
-}: RegisterParams): Promise<RegisterReturn> {
-  try {
-    await client.query(
-      "INSERT INTO Users(discordId, discordName) VALUES($1, $2)",
-      [discordId, discordName]
-    );
-    return { state: "success" };
-  } catch (error) {
-    if (error.toString().startsWith("error: duplicate key")) {
-      return { state: "duplicate" };
-    }
-    return { state: "error", error };
-  }
-}
-
-type GetUserIdParams = {
-  client: DBClient;
-  discordId: string;
+  discordName
+) => {
+  return await databaseClient.query(
+    "INSERT INTO Users(discordId, discordName) VALUES($1, $2)",
+    [discordId, discordName]
+  );
 };
-type GetUserIdReturn = number | undefined;
 
-async function getUserId({
-  client,
-  discordId,
-}: GetUserIdParams): Promise<GetUserIdReturn> {
+type GetUserId = (
+  databaseClient: DataBaseClient,
+  discordId: string
+) => Promise<number | undefined>;
+
+export const getUserId: GetUserId = async (databaseClient, discordId) => {
   return (
-    await client.query("SELECT id FROM Users WHERE discordid=$1", [discordId])
+    await databaseClient.query("SELECT id FROM Users WHERE discordid=$1", [
+      discordId,
+    ])
   ).rows[0]?.id;
-}
-
-type AddItemParams = {
-  client: DBClient;
-  discordId: string;
-  name?: string;
-  url?: string;
-  price: string;
-};
-type AddItemReturn = {
-  state:
-    | "success"
-    | "name_missing"
-    | "url_missing"
-    | "not_registered"
-    | "product_exists"
-    | "error";
-  error?: Error;
 };
 
-export async function addProduct({
-  client,
-  discordId,
+type AddProduct = (
+  databaseClient: DataBaseClient,
+  userId: number,
+  name: string,
+  url: string,
+  price: string
+) => Promise<QueryResult>;
+
+export const addProduct: AddProduct = async (
+  databaseClient,
+  userId,
   name,
   url,
-  price,
-}: AddItemParams): Promise<AddItemReturn> {
-  try {
-    if (!name) {
-      return { state: "name_missing" };
-    }
-    if (!url) {
-      return { state: "url_missing" };
-    }
-
-    const userId = await getUserId({ client, discordId });
-    if (userId === undefined) {
-      return { state: "not_registered" };
-    }
-
-    await client.query(
-      "INSERT INTO Products(user_id, name, url, price) VALUES($1, $2, $3, $4)",
-      [userId, name, url, price]
-    );
-    return { state: "success" };
-  } catch (error) {
-    if (error.toString().startsWith("error: duplicate key")) {
-      return { state: "product_exists" };
-    }
-    return { state: "error", error };
-  }
-}
-
-type RemoveItemParams = {
-  client: DBClient;
-  discordId: string;
-  name?: string;
-};
-type RemoveItemReturn = {
-  state:
-    | "success"
-    | "name_missing"
-    | "not_registered"
-    | "product_not_found"
-    | "error";
-  error?: Error;
+  price
+) => {
+  return await databaseClient.query(
+    "INSERT INTO Products(user_id, name, url, price) VALUES($1, $2, $3, $4)",
+    [userId, name, url, price]
+  );
 };
 
-export async function removeProduct({
-  client,
-  discordId,
-  name,
-}: RemoveItemParams): Promise<RemoveItemReturn> {
-  try {
-    if (!name) {
-      return { state: "name_missing" };
-    }
-    const userId = await getUserId({ client, discordId });
-    if (userId === undefined) {
-      return { state: "not_registered" };
-    }
+type RemoveProduct = (
+  databaseClient: DataBaseClient,
+  discordId: string,
+  name?: string
+) => Promise<number | undefined>;
 
-    const result = await client.query(
+export const removeProduct: RemoveProduct = async (
+  databaseClient,
+  userId,
+  name
+) => {
+  return (
+    await databaseClient.query(
       "DELETE FROM Products WHERE user_id=$1 AND name=$2 RETURNING *",
       [userId, name]
-    );
-
-    if (result.rowCount > 0) {
-      return { state: "success" };
-    } else {
-      return { state: "product_not_found" };
-    }
-  } catch (error) {
-    console.log(error);
-    return { state: "error", error };
-  }
-}
-
-type GetProductsParams = {
-  client: DBClient;
-  discordId: string;
-};
-type GetProductsReturn = {
-  state: "success" | "not_registered" | "error";
-  error?: Error;
-  products?: [Product];
+    )
+  ).rowCount;
 };
 
-export async function getProducts({
-  client,
-  discordId,
-}: GetProductsParams): Promise<GetProductsReturn> {
-  try {
-    const userId = await getUserId({ client, discordId });
-    if (userId === undefined) {
-      return { state: "not_registered" };
-    }
+type GetProducts = (
+  databaseClient: DataBaseClient,
+  userId: number
+) => Promise<[Product]>;
 
-    const result = await client.query(
-      "SELECT * FROM Products WHERE user_id=$1",
-      [userId]
-    );
+export const getProducts: GetProducts = async (databaseClient, userId) => {
+  const results = await databaseClient.query(
+    "SELECT * FROM Products WHERE user_id=$1",
+    [userId]
+  );
 
-    const products = result.rows.map(product => {
-      return {
-        userId: product.user_id,
-        name: product.name,
-        url: product.url,
-        price: product.price,
-        ceratedAt: product.created_at,
-      };
-    }) as unknown as [Product];
-
-    return { state: "success", products };
-  } catch (error) {
-    return { state: "error", error };
-  }
-}
-
-type UpdatePriceParams = {
-  client: DBClient;
-  discordId: string;
-  name?: string;
-  price: string; // e.g. 4,90€ is stored as 490 €, or 250€ as 25000 €
-};
-type UpdatePriceReturn = {
-  state: "success" | "name_missing" | "not_registered" | "error";
-  error?: Error;
+  const products = results?.rows.map((product) => {
+    return {
+      userId: product.user_id,
+      name: product.name,
+      url: product.url,
+      price: product.price,
+      ceratedAt: product.created_at,
+    };
+  }) as unknown as [Product];
+  return products;
 };
 
-export async function updatePrice({
-  client,
-  discordId,
+type UpdatePrice = (
+  databaseClient: DataBaseClient,
+  discordId: string,
+  name: string,
+  price: string
+) => Promise<QueryResult>;
+
+export const updatePrice: UpdatePrice = async (
+  databaseClient,
+  userId,
   name,
-  price,
-}: UpdatePriceParams): Promise<UpdatePriceReturn> {
-  try {
-    if (!name) {
-      return { state: "name_missing" };
-    }
-
-    const userId = await getUserId({ client, discordId });
-    if (userId === undefined) {
-      return { state: "not_registered" };
-    }
-
-    await client.query(
-      "UPDATE Products SET price=$1 WHERE user_id=$2 AND name=$3",
-      [price, userId, name]
-    );
-    return { state: "success" };
-  } catch (error) {
-    return { state: "error", error };
-  }
-}
+  price
+) => {
+  return await databaseClient.query(
+    "UPDATE Products SET price=$1 WHERE user_id=$2 AND name=$3",
+    [price, userId, name]
+  );
+};
