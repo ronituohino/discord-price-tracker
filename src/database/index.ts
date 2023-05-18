@@ -23,9 +23,8 @@ type RegisterParams = {
   discordName: string;
 };
 type RegisterReturn = {
-  id: number;
-  discordid: string;
-  discordname: string;
+  state: "success" | "duplicate" | "error";
+  error?: Error;
 };
 
 export async function register({
@@ -33,11 +32,33 @@ export async function register({
   discordId,
   discordName,
 }: RegisterParams): Promise<RegisterReturn> {
-  const result = await client.query(
-    "INSERT INTO Users(discordId, discordName) VALUES($1, $2) RETURNING *",
-    [discordId, discordName]
-  );
-  return result.rows[0];
+  try {
+    await client.query(
+      "INSERT INTO Users(discordId, discordName) VALUES($1, $2)",
+      [discordId, discordName]
+    );
+    return { state: "success" };
+  } catch (error) {
+    if (error.toString().startsWith("error: duplicate key")) {
+      return { state: "duplicate" };
+    }
+    return { state: "error", error };
+  }
+}
+
+type GetUserIdParams = {
+  client: DBClient;
+  discordId: string;
+};
+type GetUserIdReturn = number | undefined;
+
+async function getUserId({
+  client,
+  discordId,
+}: GetUserIdParams): Promise<GetUserIdReturn> {
+  return (
+    await client.query("SELECT id FROM Users WHERE discordid=$1", [discordId])
+  ).rows[0]?.id;
 }
 
 type AddItemParams = {
@@ -48,7 +69,8 @@ type AddItemParams = {
   price: string;
 };
 type AddItemReturn = {
-  name: string;
+  state: "success" | "not_registered" | "product_exists" | "error";
+  error?: Error;
 };
 
 export async function addItem({
@@ -57,26 +79,62 @@ export async function addItem({
   name,
   url,
   price,
-}: AddItemParams) {
-  const userId = (
-    await client.query("SELECT id FROM Users WHERE discordid=$1", [discordId])
-  ).rows[0].id;
+}: AddItemParams): Promise<AddItemReturn> {
+  try {
+    const userId = await getUserId({ client, discordId });
+    if (userId === undefined) {
+      return { state: "not_registered" };
+    }
 
-  console.log(userId);
-
-  const result = await client.query(
-    "INSERT INTO Products(user_id, name, url, price) VALUES($1, $2, $3, $4) RETURNING *",
-    [userId, name, url, price]
-  );
-  return result.rows[0];
+    await client.query(
+      "INSERT INTO Products(user_id, name, url, price) VALUES($1, $2, $3, $4)",
+      [userId, name, url, price]
+    );
+    return { state: "success" };
+  } catch (error) {
+    if (error.toString().startsWith("error: duplicate key")) {
+      return { state: "product_exists" };
+    }
+    return { state: "error", error };
+  }
 }
 
 type RemoveItemParams = {
   client: DBClient;
   name: string;
+  discordId: string;
+};
+type RemoveItemReturn = {
+  state: "success" | "not_registered" | "product_not_found" | "error";
+  error?: Error;
 };
 
-export async function removeItem({ client, name }: RemoveItemParams) {}
+export async function removeItem({
+  client,
+  name,
+  discordId,
+}: RemoveItemParams): Promise<RemoveItemReturn> {
+  try {
+    const userId = await getUserId({ client, discordId });
+    if (userId === undefined) {
+      return { state: "not_registered" };
+    }
+
+    const result = await client.query(
+      "DELETE FROM Products WHERE user_id=$1 AND name=$2 RETURNING *",
+      [userId, name]
+    );
+
+    if (result.rowCount > 0) {
+      return { state: "success" };
+    } else {
+      return { state: "product_not_found" };
+    }
+  } catch (error) {
+    console.log(error);
+    return { state: "error", error };
+  }
+}
 
 export async function getItems() {}
 

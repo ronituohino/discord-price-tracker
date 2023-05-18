@@ -7,6 +7,7 @@ import {
   getItems,
   register,
 } from "./database/index.js";
+import { assertUnreachable } from "./types.js";
 
 type Params = {
   token: string;
@@ -49,7 +50,24 @@ async function handleCommand(
         discordId: message.author.id,
         discordName: message.author.username,
       });
-      message.channel.send(`Created new user, hi ${result.discordname}!`);
+
+      switch (result.state) {
+        case "success":
+          message.channel.send(
+            `Created new user, hi ${message.author.username}!`
+          );
+          break;
+        case "duplicate":
+          message.channel.send(
+            `You are already registered, ${message.author.username}.`
+          );
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+        default:
+          assertUnreachable(result.state);
+      }
     },
 
     // add product to track, /add {name}, {url}
@@ -61,12 +79,53 @@ async function handleCommand(
         url: params[1],
         price: "0",
       });
-      console.log(result);
+
+      switch (result.state) {
+        case "success":
+          message.channel.send(`Tracking ${params[0]}!`);
+          break;
+        case "not_registered":
+          message.channel.send(`You need to /register to add products.`);
+          break;
+        case "product_exists":
+          message.channel.send(`You are already tracking this product.`);
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+        default:
+          assertUnreachable(result.state);
+      }
     },
+
     // remove product from tracking, /remove {name}
     "/remove": async () => {
-      removeItem({ client: dbClient, name: params[0] });
+      const result = await removeItem({
+        client: dbClient,
+        name: params[0],
+        discordId: message.author.id,
+      });
+
+      switch (result.state) {
+        case "success":
+          message.channel.send(`No longer tracking ${params[0]}.`);
+          break;
+        case "not_registered":
+          message.channel.send(
+            `You need to /register and track something to remove products.`
+          );
+          break;
+        case "product_not_found":
+          message.channel.send(`This product is not being tracked.`);
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+        default:
+          assertUnreachable(result.state);
+      }
     },
+
     // update product prices manually, /update
     "/update": async () => {
       updateItem({ client: dbClient, name: params[0], price: "0" });
