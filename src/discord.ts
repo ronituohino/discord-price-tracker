@@ -11,10 +11,10 @@ import { history } from "./services/history.js";
 
 type Params = {
   token: string;
-  dbClient: DataBaseClient;
+  databaseClient: DataBaseClient;
 };
 
-export function startClient({ token, dbClient }: Params) {
+export function startClient({ token, databaseClient }: Params) {
   const client = new Discord.Client({
     intents: ["Guilds", "GuildMessages", "MessageContent"],
   });
@@ -29,7 +29,7 @@ export function startClient({ token, dbClient }: Params) {
   client.on("messageCreate", (message) => {
     if (message.author.id != client.user.id) {
       if (message.content.length > 0 && message.content.startsWith("/")) {
-        handleCommand(client, message, dbClient);
+        handleCommand(client, message, databaseClient);
       }
     }
   });

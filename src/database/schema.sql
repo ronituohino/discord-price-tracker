@@ -1,10 +1,10 @@
-DROP TABLE Products CASCADE;
+DROP TABLE PricePoints CASCADE;
 
 CREATE TABLE IF NOT EXISTS Users (
   id SERIAL PRIMARY KEY,
-  discordId TEXT NOT NULL UNIQUE,
-  discordName TEXT NOT NULL,
-  UNIQUE(discordId, discordName)
+  discord_id TEXT NOT NULL UNIQUE,
+  discord_name TEXT NOT NULL,
+  UNIQUE(discord_id, discord_name)
 );
 
 CREATE TABLE IF NOT EXISTS Products (
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS Products (
   user_id INTEGER REFERENCES Users ON DELETE CASCADE,
   name TEXT NOT NULL,
   url TEXT NOT NULL,
-  current_price_id INTEGER REFERENCES PricePoints,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  price TEXT,
+  created_at TIMESTAMP DEFAULT now(),
   UNIQUE(user_id, name)
 );
 
@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS PricePoints (
   id SERIAL PRIMARY KEY,
   product_id INTEGER REFERENCES Products ON DELETE CASCADE,
   price TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT now()
 );

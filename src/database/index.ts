@@ -1,14 +1,24 @@
 import pg, { QueryResult } from "pg";
 import fs from "fs";
-import type { Product, ProductWithFullHistory, PricePoint } from "../types.js";
+import type {
+  Product,
+  ProductWithFullHistory,
+  PricePoint,
+  User,
+} from "../types.js";
 
 export type DataBaseClient = pg.Client;
 
-export async function setupClient() {
+// Turn off node-pg time parsers
+const TYPE_TIMESTAMP = 1114;
+const TYPE_TIMESTAMPZ = 1184;
+const noParse = (v) => v;
+pg.types.setTypeParser(TYPE_TIMESTAMP, noParse);
+pg.types.setTypeParser(TYPE_TIMESTAMPZ, noParse);
+
+export async function setupClient(connectionString: string) {
   const client = new pg.Client({
-    // Password and container should match those in docker-compose
-    connectionString:
-      "postgresql://postgres:averygoodpassowrd!@price-tracker-db:5432/postgres",
+    connectionString,
   });
 
   // Setup database
@@ -30,7 +40,7 @@ export const registerToSystem: RegisterToSystem = async (
   discordName
 ) => {
   return await databaseClient.query(
-    "INSERT INTO Users(discordId, discordName) VALUES($1, $2)",
+    "INSERT INTO Users(discord_id, discord_name) VALUES($1, $2)",
     [discordId, discordName]
   );
 };
@@ -42,10 +52,25 @@ type GetUserId = (
 
 export const getUserId: GetUserId = async (databaseClient, discordId) => {
   return (
-    await databaseClient.query("SELECT id FROM Users WHERE discordid=$1", [
+    await databaseClient.query("SELECT id FROM Users WHERE discord_id=$1", [
       discordId,
     ])
   )?.rows[0]?.id;
+};
+
+type GetUsers = (databaseClient: DataBaseClient) => Promise<User[]>;
+
+export const getUsers: GetUsers = async (databaseClient) => {
+  const users = (
+    await databaseClient.query("SELECT id, discord_id, discord_name FROM Users")
+  )?.rows.map((user) => {
+    return {
+      id: user.id,
+      discordId: user.discord_id,
+      discordName: user.discord_name,
+    } as unknown as User;
+  });
+  return users;
 };
 
 type AddProduct = (
@@ -55,6 +80,7 @@ type AddProduct = (
   url: string
 ) => Promise<number>;
 
+// Remember to add a price point to set a price for the product!
 export const addProduct: AddProduct = async (
   databaseClient,
   userId,
@@ -96,9 +122,7 @@ type GetProducts = (
 export const getProducts: GetProducts = async (databaseClient, userId) => {
   const products = (
     await databaseClient.query(
-      `SELECT A.id, A.user_id, A.name, A.url, A.created_at, B.price 
-    FROM Products A, PricePoints B 
-    WHERE A.user_id=$1 AND A.current_price_id=B.id`,
+      `SELECT id, user_id, name, url, created_at, price FROM Products WHERE user_id=$1`,
       [userId]
     )
   )?.rows.map((product) => {
@@ -145,6 +169,8 @@ export const getProductWithFullHistory: GetProductWithFullHistory = async (
     };
   }) as unknown as [PricePoint];
 
+  console.log(prices);
+
   return {
     id: product.id,
     userId: product.user_id,
@@ -166,15 +192,13 @@ export const addPricePoint: AddPricePoint = async (
   productId,
   price
 ) => {
-  const pricePointId = (
-    await databaseClient.query(
-      "INSERT INTO PricePoints(product_id, price) VALUES($1, $2) RETURNING id",
-      [productId, price]
-    )
-  )?.rows[0]?.id;
+  await databaseClient.query(
+    "INSERT INTO PricePoints(product_id, price) VALUES($1, $2)",
+    [productId, price]
+  );
 
   return await databaseClient.query(
-    "UPDATE Products SET current_price_id=$1 WHERE id=$2",
-    [pricePointId, productId]
+    "UPDATE Products SET price=$1 WHERE id=$2",
+    [price, productId]
   );
 };

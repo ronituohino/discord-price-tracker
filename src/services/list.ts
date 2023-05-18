@@ -8,7 +8,7 @@ type Params = {
 
 type Return = {
   status: "success" | "not_registered" | "error";
-  products?: [Product];
+  products?: Product[];
   error?: Error;
 };
 

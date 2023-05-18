@@ -2,7 +2,12 @@ export function assertUnreachable(_: never): never {
   throw new Error("Didn't expect to get here");
 }
 
-// This is directly from the database, which does not contain the price points
+export type User = {
+  id: number;
+  discordId: string;
+  discordName: string;
+};
+
 export type Product = {
   id: number;
   userId: number;
