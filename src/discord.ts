@@ -3,7 +3,7 @@ import {
   DBClient,
   addProduct,
   removeProduct,
-  updateItem,
+  updatePrice,
   getProducts,
   register,
 } from "./database/index.js";
@@ -75,8 +75,8 @@ async function handleCommand(
       const result = await addProduct({
         discordId: message.author.id,
         client: dbClient,
-        name: params[0],
-        url: params[1],
+        name: params[0].trim(),
+        url: params[1].trim(),
         price: "0",
       });
 
@@ -89,6 +89,16 @@ async function handleCommand(
           break;
         case "product_exists":
           message.channel.send(`You are already tracking this product.`);
+          break;
+        case "name_missing":
+          message.channel.send(
+            "You need to provide a name for the product: /add {name}, {url}"
+          );
+          break;
+        case "url_missing":
+          message.channel.send(
+            "You need to provide a url for the product: /add {name}, {url}"
+          );
           break;
         case "error":
           message.channel.send(`Something went wrong: ${result.error}`);
@@ -118,6 +128,11 @@ async function handleCommand(
         case "product_not_found":
           message.channel.send(`This product is not being tracked.`);
           break;
+        case "name_missing":
+          message.channel.send(
+            "You need to provide a name for the product: /add {name}, {url}"
+          );
+          break;
         case "error":
           message.channel.send(`Something went wrong: ${result.error}`);
           break;
@@ -128,8 +143,35 @@ async function handleCommand(
 
     // update product prices manually, /update
     "/update": async () => {
-      updateItem({ client: dbClient, name: params[0], price: "0" });
+      const result = await updatePrice({
+        client: dbClient,
+        discordId: message.author.id,
+        name: params[0],
+        price: "10 €",
+      });
+
+      switch (result.state) {
+        case "success":
+          message.channel.send(`Product price updated.`);
+          break;
+        case "not_registered":
+          message.channel.send(
+            `You need to /register and track something to update product prices.`
+          );
+          break;
+        case "name_missing":
+          message.channel.send(
+            "You need to provide a name for the product: /add {name}, {url}"
+          );
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+        default:
+          assertUnreachable(result.state);
+      }
     },
+
     // list tracked products, /list
     "/list": async () => {
       const result = await getProducts({
@@ -140,11 +182,12 @@ async function handleCommand(
       switch (result.state) {
         case "success":
           if (result.products.length > 0) {
-            message.channel.send(
-              `Your tracked products: ${result.products
-                .map(product => product.name)
-                .join(", ")}`
-            );
+            const productsString = result.products
+              .map(
+                product => `${product.name}, ${product.price}, ${product.url}`
+              )
+              .join("\n");
+            message.channel.send(`Your tracked products:\n ${productsString}`);
           } else {
             message.channel.send("You aren't tracking any products!");
           }

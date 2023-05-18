@@ -7,10 +7,7 @@ TODO (\*essentials):
 
 - \*Database schema and init
 - \*Discord bot commands
-  - Add product
-  - Remove product
   - Get prices
-  - List products
 - \*Connect scrapers
 - \*Cron jobs to follow products daily
 - Product statistics (use some lib for this)

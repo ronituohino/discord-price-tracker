@@ -65,12 +65,18 @@ async function getUserId({
 type AddItemParams = {
   client: DBClient;
   discordId: string;
-  name: string;
-  url: string;
+  name?: string;
+  url?: string;
   price: string;
 };
 type AddItemReturn = {
-  state: "success" | "not_registered" | "product_exists" | "error";
+  state:
+    | "success"
+    | "name_missing"
+    | "url_missing"
+    | "not_registered"
+    | "product_exists"
+    | "error";
   error?: Error;
 };
 
@@ -82,6 +88,13 @@ export async function addProduct({
   price,
 }: AddItemParams): Promise<AddItemReturn> {
   try {
+    if (!name) {
+      return { state: "name_missing" };
+    }
+    if (!url) {
+      return { state: "url_missing" };
+    }
+
     const userId = await getUserId({ client, discordId });
     if (userId === undefined) {
       return { state: "not_registered" };
@@ -102,20 +115,28 @@ export async function addProduct({
 
 type RemoveItemParams = {
   client: DBClient;
-  name: string;
   discordId: string;
+  name?: string;
 };
 type RemoveItemReturn = {
-  state: "success" | "not_registered" | "product_not_found" | "error";
+  state:
+    | "success"
+    | "name_missing"
+    | "not_registered"
+    | "product_not_found"
+    | "error";
   error?: Error;
 };
 
 export async function removeProduct({
   client,
-  name,
   discordId,
+  name,
 }: RemoveItemParams): Promise<RemoveItemReturn> {
   try {
+    if (!name) {
+      return { state: "name_missing" };
+    }
     const userId = await getUserId({ client, discordId });
     if (userId === undefined) {
       return { state: "not_registered" };
@@ -178,10 +199,39 @@ export async function getProducts({
   }
 }
 
-type UpdateItemParams = {
+type UpdatePriceParams = {
   client: DBClient;
-  name: string;
-  price: string;
+  discordId: string;
+  name?: string;
+  price: string; // e.g. 4,90€ is stored as 490 €, or 250€ as 25000 €
+};
+type UpdatePriceReturn = {
+  state: "success" | "name_missing" | "not_registered" | "error";
+  error?: Error;
 };
 
-export async function updateItem({ client, name, price }: UpdateItemParams) {}
+export async function updatePrice({
+  client,
+  discordId,
+  name,
+  price,
+}: UpdatePriceParams): Promise<UpdatePriceReturn> {
+  try {
+    if (!name) {
+      return { state: "name_missing" };
+    }
+
+    const userId = await getUserId({ client, discordId });
+    if (userId === undefined) {
+      return { state: "not_registered" };
+    }
+
+    await client.query(
+      "UPDATE Products SET price=$1 WHERE user_id=$2 AND name=$3",
+      [price, userId, name]
+    );
+    return { state: "success" };
+  } catch (error) {
+    return { state: "error", error };
+  }
+}
