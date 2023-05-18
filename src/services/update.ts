@@ -28,7 +28,10 @@ export async function update({
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
       const price = await getProductPrice(product.url);
-      await updatePrice(databaseClient, discordId, product.name, price);
+
+      if (price !== product.price) {
+        await updatePrice(databaseClient, userId, product.name, price);
+      }
     }
 
     return { status: "success", amount: products.length };

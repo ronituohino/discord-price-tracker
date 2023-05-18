@@ -71,7 +71,7 @@ export const addProduct: AddProduct = async (
 
 type RemoveProduct = (
   databaseClient: DataBaseClient,
-  discordId: string,
+  userId: number,
   name?: string
 ) => Promise<number | undefined>;
 
@@ -113,7 +113,7 @@ export const getProducts: GetProducts = async (databaseClient, userId) => {
 
 type UpdatePrice = (
   databaseClient: DataBaseClient,
-  discordId: string,
+  userId: number,
   name: string,
   price: string
 ) => Promise<QueryResult>;

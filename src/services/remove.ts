@@ -32,7 +32,7 @@ export async function remove({
       return { status: "not_registered" };
     }
 
-    const rowCount = await removeProduct(databaseClient, discordId, name);
+    const rowCount = await removeProduct(databaseClient, userId, name);
 
     if (rowCount > 0) {
       return { status: "success" };
