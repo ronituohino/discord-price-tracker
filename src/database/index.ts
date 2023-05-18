@@ -1,5 +1,6 @@
 import pg from "pg";
 import fs from "fs";
+import { Product } from "../types.js";
 
 export type DBClient = pg.Client;
 
@@ -73,7 +74,7 @@ type AddItemReturn = {
   error?: Error;
 };
 
-export async function addItem({
+export async function addProduct({
   client,
   discordId,
   name,
@@ -109,7 +110,7 @@ type RemoveItemReturn = {
   error?: Error;
 };
 
-export async function removeItem({
+export async function removeProduct({
   client,
   name,
   discordId,
@@ -136,7 +137,46 @@ export async function removeItem({
   }
 }
 
-export async function getItems() {}
+type GetProductsParams = {
+  client: DBClient;
+  discordId: string;
+};
+type GetProductsReturn = {
+  state: "success" | "not_registered" | "error";
+  error?: Error;
+  products?: [Product];
+};
+
+export async function getProducts({
+  client,
+  discordId,
+}: GetProductsParams): Promise<GetProductsReturn> {
+  try {
+    const userId = await getUserId({ client, discordId });
+    if (userId === undefined) {
+      return { state: "not_registered" };
+    }
+
+    const result = await client.query(
+      "SELECT * FROM Products WHERE user_id=$1",
+      [userId]
+    );
+
+    const products = result.rows.map(product => {
+      return {
+        userId: product.user_id,
+        name: product.name,
+        url: product.url,
+        price: product.price,
+        ceratedAt: product.created_at,
+      };
+    }) as unknown as [Product];
+
+    return { state: "success", products };
+  } catch (error) {
+    return { state: "error", error };
+  }
+}
 
 type UpdateItemParams = {
   client: DBClient;

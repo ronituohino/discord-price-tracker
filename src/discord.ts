@@ -1,10 +1,10 @@
 import Discord, { Client, Message } from "discord.js";
 import {
   DBClient,
-  addItem,
-  removeItem,
+  addProduct,
+  removeProduct,
   updateItem,
-  getItems,
+  getProducts,
   register,
 } from "./database/index.js";
 import { assertUnreachable } from "./types.js";
@@ -72,7 +72,7 @@ async function handleCommand(
 
     // add product to track, /add {name}, {url}
     "/add": async () => {
-      const result = await addItem({
+      const result = await addProduct({
         discordId: message.author.id,
         client: dbClient,
         name: params[0],
@@ -100,7 +100,7 @@ async function handleCommand(
 
     // remove product from tracking, /remove {name}
     "/remove": async () => {
-      const result = await removeItem({
+      const result = await removeProduct({
         client: dbClient,
         name: params[0],
         discordId: message.author.id,
@@ -132,7 +132,32 @@ async function handleCommand(
     },
     // list tracked products, /list
     "/list": async () => {
-      getItems();
+      const result = await getProducts({
+        client: dbClient,
+        discordId: message.author.id,
+      });
+
+      switch (result.state) {
+        case "success":
+          if (result.products.length > 0) {
+            message.channel.send(
+              `Your tracked products: ${result.products
+                .map(product => product.name)
+                .join(", ")}`
+            );
+          } else {
+            message.channel.send("You aren't tracking any products!");
+          }
+          break;
+        case "not_registered":
+          message.channel.send(
+            `You need to /register and track something to list products.`
+          );
+          break;
+        case "error":
+          message.channel.send(`Something went wrong: ${result.error}`);
+          break;
+      }
     },
   }[command];
 
