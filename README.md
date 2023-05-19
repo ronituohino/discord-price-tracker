@@ -3,12 +3,13 @@
 A simple price tracking Discord bot using Node.js and
 [Puppeteer](https://pptr.dev/).
 
-TODO (\*essentials):
+TODO:
 
-- \*Cron jobs to follow products daily
 - Product statistics (use some lib for this)
 - Price alerts
 
 ## Documentation
 
+[Starting the tracker](./docs/production.md)
 [Setting up dev environment](./docs/development.md)
+[Setting up a Discord bot](./docs/discord_bot.md)

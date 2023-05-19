@@ -1,5 +1,5 @@
-import type { DataBaseClient } from "../database/index.js";
-import { registerToSystem } from "../database/index.js";
+import type { DataBaseClient } from "../database.js";
+import { registerToSystem } from "../database.js";
 
 type Params = {
   databaseClient: DataBaseClient;

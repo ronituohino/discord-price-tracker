@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  price-tracker:
+    image: price-tracker
+    container_name: price-tracker
+    build:
+      context: ./
+      args:
+        - DOCKER_PASSWORD=${DOCKER_PASSWORD}
+    environment:
+      - DISCORD_BOT_SECRET=${DISCORD_BOT_SECRET}
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - price-tracker-db
+
+  price-tracker-db:
+    image: postgres:15.3-alpine
+    container_name: price-tracker-db
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - database:/var/lib/postgresql/data
+
+volumes:
+  database:

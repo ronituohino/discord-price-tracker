@@ -1,6 +1,6 @@
-import { DataBaseClient, getProducts } from "../database/index.js";
+import { DataBaseClient, getProducts } from "../database.js";
 import { getProductPrice } from "../scrapers/index.js";
-import { addPricePoint, getUserId } from "../database/index.js";
+import { addPricePoint, getUserId } from "../database.js";
 
 type Params = {
   databaseClient: DataBaseClient;

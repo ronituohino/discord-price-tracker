@@ -5,7 +5,7 @@ dist
 node_modules
 
 # .env vars
-.env
+.env*
 
 # Puppeteer cache
 .cache

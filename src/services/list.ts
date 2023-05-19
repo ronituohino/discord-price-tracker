@@ -1,4 +1,4 @@
-import { DataBaseClient, getProducts, getUserId } from "../database/index.js";
+import { DataBaseClient, getProducts, getUserId } from "../database.js";
 import { Product } from "../types.js";
 
 type Params = {

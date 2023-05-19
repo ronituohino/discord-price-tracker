@@ -1,6 +1,6 @@
-import { DataBaseClient, removeProduct } from "../database/index.js";
+import { DataBaseClient, removeProduct } from "../database.js";
 
-import { getUserId } from "../database/index.js";
+import { getUserId } from "../database.js";
 
 type Params = {
   databaseClient: DataBaseClient;

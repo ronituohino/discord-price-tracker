@@ -5,16 +5,9 @@ import type {
   ProductWithFullHistory,
   PricePoint,
   User,
-} from "../types.js";
+} from "./types.js";
 
 export type DataBaseClient = pg.Client;
-
-// Turn off node-pg time parsers
-const TYPE_TIMESTAMP = 1114;
-const TYPE_TIMESTAMPZ = 1184;
-const noParse = (v) => v;
-pg.types.setTypeParser(TYPE_TIMESTAMP, noParse);
-pg.types.setTypeParser(TYPE_TIMESTAMPZ, noParse);
 
 export async function setupClient(connectionString: string) {
   const client = new pg.Client({
@@ -23,7 +16,7 @@ export async function setupClient(connectionString: string) {
 
   // Setup database
   await client.connect();
-  const sql = fs.readFileSync("./src/database/schema.sql").toString();
+  const sql = fs.readFileSync("./schema.sql").toString();
   await client.query(sql);
   return client;
 }
@@ -165,11 +158,9 @@ export const getProductWithFullHistory: GetProductWithFullHistory = async (
   )?.rows.map((price) => {
     return {
       price: price.price,
-      createdAt: product.created_at,
+      createdAt: price.created_at,
     };
   }) as unknown as [PricePoint];
-
-  console.log(prices);
 
   return {
     id: product.id,

@@ -3,23 +3,19 @@
 Make sure you have [Node](https://nodejs.org/en) installed.  
 Install dependencies (linting and puppeteer cache):
 
-```
+```bash
 npm i
 ```
 
-### Create a Discord bot
+## Create a Discord bot
 
-Create a new Discord bot and add it to your server by following the start here:
-https://docs.replit.com/tutorials/nodejs/build-basic-discord-bot-nodejs
+[Follow instructions in here](discord_bot.md).
 
-Be sure to enable all privileged gateway intents in the developer portal for the
-bot.
-
-### Postgres setup
+## Postgres setup
 
 Check if you have postgres installed:
 
-```
+```bash
 sudo systemctl status postgresql
 ```
 
@@ -27,11 +23,11 @@ The response should have something along the lines of `Active: active (exited)`
 if postgres is running. Otherwise install
 [postgres](https://www.postgresql.org/).
 
-#### Setting up the databases
+### Setting up the database
 
 Enter the database with:
 
-```
+```bash
 sudo -u postgres psql
 ```
 
@@ -44,7 +40,7 @@ CREATE DATABASE price_tracker;
 Set database password with:
 
 ```
-ALTER ROLE postgres WITH PASSWORD '<a good password>';
+ALTER ROLE postgres WITH PASSWORD '<postgres password>';
 ```
 
 Exit the database with:
@@ -53,20 +49,20 @@ Exit the database with:
 \q
 ```
 
-### .env
+## .env.dev
 
 Get bot token from the developer portal and set it into `DISCORD_BOT_SECRET` Get
 postgres connection url and set it into `DATABASE_URL`
 
-.env should look like this:
+.env.dev should look like this:
 
 ```
 DISCORD_BOT_SECRET="..."
-DATABASE_URL="postgresql://postgres:<a good password>@localhost:5432/price_tracker"
+DATABASE_URL="postgresql://postgres:<postgres password>@localhost:5432/price_tracker"
 ```
 
 ## Running the development environment
 
-```
+```bash
 npm run dev
 ```

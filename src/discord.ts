@@ -1,5 +1,5 @@
 import Discord, { Client, Message } from "discord.js";
-import type { DataBaseClient } from "./database/index.js";
+import type { DataBaseClient } from "./database.js";
 import { assertUnreachable } from "./types.js";
 
 import { add } from "./services/add.js";

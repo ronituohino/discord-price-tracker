@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import { setupClient } from "./database/index.js";
+import { setupClient } from "./database.js";
 const databaseClient = await setupClient(process.env["DATABASE_URL"]);
 
 import { startClient } from "./discord.js";

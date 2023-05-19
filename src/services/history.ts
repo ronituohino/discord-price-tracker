@@ -2,7 +2,7 @@ import {
   DataBaseClient,
   getProductWithFullHistory,
   getUserId,
-} from "../database/index.js";
+} from "../database.js";
 import type { ProductWithFullHistory } from "../types.js";
 
 type Params = {
