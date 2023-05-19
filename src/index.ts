@@ -5,7 +5,10 @@ import { setupClient } from "./database.js";
 const databaseClient = await setupClient(process.env["DATABASE_URL"]);
 
 import { startClient } from "./discord.js";
-startClient({ token: process.env["DISCORD_BOT_SECRET"], databaseClient });
+const discordClient = startClient({
+  token: process.env["DISCORD_BOT_SECRET"],
+  databaseClient,
+});
 
 import { startJobs } from "./cron.js";
-startJobs(databaseClient);
+startJobs(databaseClient, discordClient);

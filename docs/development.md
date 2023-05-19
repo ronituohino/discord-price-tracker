@@ -51,13 +51,15 @@ Exit the database with:
 
 ## .env.dev
 
-Get bot token from the developer portal and set it into `DISCORD_BOT_SECRET` Get
-postgres connection url and set it into `DATABASE_URL`
+Get bot token from the developer portal and set it into `DISCORD_BOT_SECRET`.  
+Get `DISCORD_CHANNEL_ID` by right-clicking the channel and copying the id.  
+Get postgres connection url and set it into `DATABASE_URL`.
 
 .env.dev should look like this:
 
 ```
 DISCORD_BOT_SECRET="..."
+DISCORD_CHANNEL_ID="..."
 DATABASE_URL="postgresql://postgres:<postgres password>@localhost:5432/price_tracker"
 ```
 

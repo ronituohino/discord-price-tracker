@@ -11,10 +11,14 @@ You need to create a file named `.env` in the root of this project.
 To set up a new Discord bot and set the `DISCORD_BOT_SECRET`, follow
 [these](./discord_bot.md) instructions.
 
+Copy `DISCORD_CHANNEL_ID` by right-clicking a Discord channel the bot should
+post updates on.
+
 Make sure `<postgres password>` fields match in the file.
 
 ```
 DISCORD_BOT_SECRET="..."
+DISCORD_CHANNEL_ID="..."
 DATABASE_URL="postgresql://postgres:<postgres password>@price-tracker-db:5432/"
 POSTGRES_PASSWORD="<postgres password>"
 DOCKER_PASSWORD="<docker user password>"

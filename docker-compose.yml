@@ -10,6 +10,7 @@ services:
         - DOCKER_PASSWORD=${DOCKER_PASSWORD}
     environment:
       - DISCORD_BOT_SECRET=${DISCORD_BOT_SECRET}
+      - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID}
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
       - price-tracker-db

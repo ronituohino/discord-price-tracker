@@ -35,6 +35,7 @@ export function startClient({ token, databaseClient }: Params) {
   });
 
   client.login(token);
+  return client;
 }
 
 const commands = {
