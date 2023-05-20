@@ -4,7 +4,7 @@ import type { Channel } from "discord.js";
 // eg. 423,90 € or 332,55 $ or 12313453,50 €
 // Hopefully this makes sense lol
 export function isCurrencyString(price: string): boolean {
-  const re = new RegExp("^d+,d{2}s[€$]$");
+  const re = new RegExp("^[0-9]+,[0-9]{2} [€$]$");
   return re.test(price);
 }
 

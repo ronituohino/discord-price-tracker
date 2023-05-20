@@ -1,7 +1,6 @@
 # price-tracker
 
-A simple price tracking Discord bot using Node.js and
-[Puppeteer](https://pptr.dev/).
+A simple price tracking Discord bot using Node.js.
 
 TODO:
 

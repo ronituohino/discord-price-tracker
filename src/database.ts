@@ -136,7 +136,7 @@ type GetProductWithFullHistory = (
   databaseClient: DataBaseClient,
   userId: number,
   name: string
-) => Promise<ProductWithFullHistory>;
+) => Promise<undefined | ProductWithFullHistory>;
 
 export const getProductWithFullHistory: GetProductWithFullHistory = async (
   databaseClient,
@@ -149,6 +149,10 @@ export const getProductWithFullHistory: GetProductWithFullHistory = async (
       [userId, name]
     )
   )?.rows[0];
+
+  if (!product || !product.id) {
+    return undefined;
+  }
 
   const prices = (
     await databaseClient.query(

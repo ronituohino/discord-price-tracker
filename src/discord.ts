@@ -191,7 +191,7 @@ async function handleCommand(
             break;
           case "unable_to_scrape":
             message.channel.send(
-              `Update cancelled, unable to scrape ${result.product.name} from ${result.product.url}`
+              `Update cancelled, unable to scrape ${result.product.name} from <${result.product.url}>`
             );
             break;
           case "error":
@@ -215,7 +215,8 @@ async function handleCommand(
           if (result.products.length > 0) {
             const productsString = result.products
               .map(
-                (product) => `${product.name}, ${product.price}, ${product.url}`
+                (product) =>
+                  `${product.name}, ${product.price}, <${product.url}>`
               )
               .join("\n");
             await splitMessageSend(
@@ -275,6 +276,11 @@ async function handleCommand(
         case "name_missing":
           message.channel.send(
             "You need to provide a name for the product: /history {name}"
+          );
+          break;
+        case "name_wrong":
+          message.channel.send(
+            `You are not tracking a product with the name: ${params[0]}`
           );
           break;
         case "not_registered":

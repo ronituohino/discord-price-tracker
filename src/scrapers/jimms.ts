@@ -1,22 +1,22 @@
-import puppeteer from "puppeteer";
 import type { UrlMatcher, Scraper } from "./index.js";
+import { parse } from "node-html-parser";
 
 export const jimmsUrl: UrlMatcher = (url) => {
   return url.startsWith("https://www.jimms.fi");
 };
 
 export const jimms: Scraper = async (productPageUrl) => {
-  const browser = await puppeteer.launch({
-    headless: "new",
-    executablePath: process.env.CHROMIUM_PATH,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  const page = await browser.newPage();
+  const result = await fetch(productPageUrl);
+  const page = await result.text();
+  const parsedHtml = parse(page);
+  // meta tag unlikely to change in the near future
+  const price = parsedHtml
+    .querySelector("meta[property='product:price:amount']")
+    .getAttribute("content");
 
-  await page.goto(productPageUrl);
-  const element = await page.waitForSelector(`span[itemprop="price"]`);
-  const price = await element.evaluate((el) => el.textContent);
-
-  await browser.close();
-  return price;
+  if (price.includes(".")) {
+    return price.replace(".", ",") + "0 €";
+  } else {
+    return price + ",00 €";
+  }
 };

@@ -12,7 +12,12 @@ type Params = {
 };
 
 type Return = {
-  status: "success" | "name_missing" | "not_registered" | "error";
+  status:
+    | "success"
+    | "name_missing"
+    | "name_wrong"
+    | "not_registered"
+    | "error";
   product?: ProductWithFullHistory;
   error?: Error;
 };
@@ -37,6 +42,11 @@ export async function history({
       userId,
       name
     );
+
+    if (!product) {
+      return { status: "name_wrong" };
+    }
+
     return { status: "success", product };
   } catch (error) {
     return { status: "error", error };

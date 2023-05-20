@@ -6,6 +6,3 @@ node_modules
 
 # .env vars
 .env*
-
-# Puppeteer cache
-.cache

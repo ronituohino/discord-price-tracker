@@ -48,7 +48,7 @@ export async function startJobs(
         case "unable_to_scrape":
           // @ts-ignore
           await channel.send(
-            `Update cancelled, unable to scrape ${updateResult.product.name} from ${updateResult.product.url}`
+            `Update cancelled, unable to scrape ${updateResult.product.name} from <${updateResult.product.url}>`
           );
           break;
         case "not_registered":
