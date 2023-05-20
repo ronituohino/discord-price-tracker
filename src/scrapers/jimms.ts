@@ -9,7 +9,7 @@ export const jimms: Scraper = async (productPageUrl) => {
   const browser = await puppeteer.launch({
     headless: "new",
     executablePath: process.env.CHROMIUM_PATH,
-    args: ["--no-sandbox"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const page = await browser.newPage();
 
