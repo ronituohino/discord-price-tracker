@@ -4,7 +4,7 @@ import type { DataBaseClient } from "./database.js";
 import { users } from "./services/users.js";
 import type { Client } from "discord.js";
 import { getChannel } from "./discord.js";
-import { splitMessageSend } from "./utils/priceParser.js";
+import { splitMessageSend } from "./utils.js";
 import { assertUnreachable } from "./types.js";
 
 export async function startJobs(

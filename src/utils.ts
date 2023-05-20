@@ -1,9 +1,14 @@
 import type { Channel } from "discord.js";
 
-// Price are stored in the format {currencyFull},{currencyPartial} {currencySign}
-// eg. 423,90 € or 332,55 $
+// Price are stored in the format {currencyFull (1+ numbers)},{currencyPartial (2 numbers)} {currencySign (€ or $)}
+// eg. 423,90 € or 332,55 $ or 12313453,50 €
 // Hopefully this makes sense lol
-// This turns that into a comparable value
+export function isCurrencyString(price: string): boolean {
+  const re = new RegExp("^d+,d{2}s[€$]$");
+  return re.test(price);
+}
+
+// This turns currency strings into a comparable value
 // eg. 42390 or 33255
 export function string2int(price: string) {
   return parseInt(price.trim().split(" ")[0].replace(",", ""));

@@ -8,7 +8,7 @@ import { update } from "./services/update.js";
 import { register } from "./services/register.js";
 import { list } from "./services/list.js";
 import { history } from "./services/history.js";
-import { splitMessageSend, string2int } from "./utils/priceParser.js";
+import { splitMessageSend, string2int } from "./utils.js";
 
 type Params = {
   token: string;
