@@ -9,6 +9,6 @@ TODO:
 
 ## Documentation
 
-[Starting the tracker](./docs/production.md)
-[Setting up dev environment](./docs/development.md)
+[Starting the tracker](./docs/production.md)  
+[Setting up dev environment](./docs/development.md)  
 [Setting up a Discord bot](./docs/discord_bot.md)
