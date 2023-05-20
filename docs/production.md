@@ -32,5 +32,13 @@ Start the bot by running:
 npm run start
 ```
 
+or
+
+```bash
+docker-compose up
+```
+
+if you don't want to install Node.
+
 This starts the database and the bot. The database is synced onto the host disk
 so if the containers are stopped, the data will be preserved.

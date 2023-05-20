@@ -1,8 +1,5 @@
 FROM node:lts-alpine AS builder
 
-
-RUN echo $HELLO
-
 WORKDIR /usr/src/app
 
 COPY . .

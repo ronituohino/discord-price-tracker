@@ -13,15 +13,22 @@ services:
       - DISCORD_CHANNEL_ID=${DISCORD_CHANNEL_ID}
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
-      - price-tracker-db
+      price-tracker-db:
+        condition: service_healthy
 
   price-tracker-db:
     image: postgres:15.3-alpine
     container_name: price-tracker-db
+    user: postgres
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - database:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   database:
