@@ -256,7 +256,7 @@ async function handleCommand(
 
             if (i === 0) {
               historyStringArray.push(
-                `${result.product.name} has the following price history:`
+                `${result.product.name} has the following price history (${result.product.pricePoints.length} datapoints):`
               );
               historyStringArray.push(`(Current price): ${pricePoint.price}`);
             } else if (thisPrice !== previousPrice) {
