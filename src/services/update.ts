@@ -1,6 +1,7 @@
 import { DataBaseClient, getProducts } from "../database.js";
 import { getProductPrice } from "../scrapers/index.js";
 import { addPricePoint, getUserId } from "../database.js";
+import { Product } from "../types.js";
 
 type Params = {
   databaseClient: DataBaseClient;
@@ -12,8 +13,9 @@ type ChangedList = [
 ];
 
 type Return = {
-  status: "success" | "not_registered" | "error";
+  status: "success" | "not_registered" | "unable_to_scrape" | "error";
   amount?: number;
+  product?: Product;
   changed?: ChangedList;
   error?: Error;
 };
@@ -34,6 +36,10 @@ export async function update({
     for (let i = 0; i < products.length; i++) {
       const product = products[i];
       const price = await getProductPrice(product.url);
+
+      if (!price) {
+        return { status: "unable_to_scrape", product };
+      }
 
       // If the price has changed
       if (price !== product.price) {

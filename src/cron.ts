@@ -3,21 +3,26 @@ import { update } from "./services/update.js";
 import type { DataBaseClient } from "./database.js";
 import { users } from "./services/users.js";
 import type { Client } from "discord.js";
+import { getChannel } from "./discord.js";
+import { splitMessageSend } from "./utils/priceParser.js";
+import { assertUnreachable } from "./types.js";
 
 export async function startJobs(
   databaseClient: DataBaseClient,
   discordClient: Client
 ) {
-  const channel = await discordClient.channels.fetch(
-    process.env["DISCORD_CHANNEL_ID"]
-  );
-
   // Cron job for updating prices, every day at 14:00
-  cron.schedule("*/15 * * * * *", async () => {
+  cron.schedule("0 14 * * *", async () => {
     const usersResult = await users({ databaseClient });
+
+    /*
     const test = [
       { productName: "RX", oldPrice: "529,90 €", newPrice: "439,90 €" },
+      { productName: "Test", oldPrice: "532,90 €", newPrice: "122,90 €" },
     ];
+    */
+
+    const channel = await getChannel(discordClient);
 
     for (let i = 0; i < usersResult.users.length; i++) {
       const user = usersResult.users[i];
@@ -28,19 +33,23 @@ export async function startJobs(
 
       switch (updateResult.status) {
         case "success":
-          if (test.length > 0) {
+          if (updateResult.changed.length > 0) {
             // Price updates
-            const productUpdateString = test
+            const productUpdateString = updateResult.changed
               .map(
                 (changed) =>
-                  `${changed.productName} price has changed: ${changed.oldPrice} => ${changed.newPrice}`
+                  `${changed.productName} changed: ${changed.oldPrice} => ${changed.newPrice}`
               )
               .join("\n");
             const updateString = `Hey, <@${user.discordId}>, some of your tracked products' prices have changed:\n${productUpdateString}`;
-            console.log("what");
-            // @ts-ignore
-            await channel.send(updateString);
+            await splitMessageSend(updateString, channel);
           }
+          break;
+        case "unable_to_scrape":
+          // @ts-ignore
+          await channel.send(
+            `Update cancelled, unable to scrape ${updateResult.product.name} from ${updateResult.product.url}`
+          );
           break;
         case "not_registered":
           // @ts-ignore
@@ -52,6 +61,8 @@ export async function startJobs(
           // @ts-ignore
           await channel.send(`Something went wrong: ${updateResult.error}`);
           break;
+        default:
+          assertUnreachable(updateResult.status);
       }
     }
   });

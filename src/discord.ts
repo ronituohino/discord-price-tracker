@@ -8,6 +8,7 @@ import { update } from "./services/update.js";
 import { register } from "./services/register.js";
 import { list } from "./services/list.js";
 import { history } from "./services/history.js";
+import { splitMessageSend, string2int } from "./utils/priceParser.js";
 
 type Params = {
   token: string;
@@ -28,7 +29,11 @@ export function startClient({ token, databaseClient }: Params) {
 
   client.on("messageCreate", (message) => {
     if (message.author.id != client.user.id) {
-      if (message.content.length > 0 && message.content.startsWith("/")) {
+      if (
+        message.content.length > 0 &&
+        message.content.startsWith("/") &&
+        message.channelId === process.env["DISCORD_CHANNEL_ID"]
+      ) {
         handleCommand(client, message, databaseClient);
       }
     }
@@ -36,6 +41,10 @@ export function startClient({ token, databaseClient }: Params) {
 
   client.login(token);
   return client;
+}
+
+export async function getChannel(discordClient: Client) {
+  return await discordClient.channels.fetch(process.env["DISCORD_CHANNEL_ID"]);
 }
 
 const commands = {
@@ -180,6 +189,11 @@ async function handleCommand(
               `You need to /register and track something to update product prices.`
             );
             break;
+          case "unable_to_scrape":
+            message.channel.send(
+              `Update cancelled, unable to scrape ${result.product.name} from ${result.product.url}`
+            );
+            break;
           case "error":
             message.channel.send(`Something went wrong: ${result.error}`);
             break;
@@ -204,14 +218,17 @@ async function handleCommand(
                 (product) => `${product.name}, ${product.price}, ${product.url}`
               )
               .join("\n");
-            message.channel.send(`Your tracked products:\n${productsString}`);
+            await splitMessageSend(
+              `Your tracked products:\n${productsString}`,
+              message.channel
+            );
           } else {
             message.channel.send("You aren't tracking any products!");
           }
           break;
         case "not_registered":
           message.channel.send(
-            `You need to /register and track something to list products.`
+            "You need to /register and track something to list products."
           );
           break;
         case "error":
@@ -230,11 +247,29 @@ async function handleCommand(
 
       switch (result.status) {
         case "success":
-          const pricesString = result.product.pricePoints
-            .map((price) => `${price.createdAt} - ${price.price}`)
-            .join("\n");
-          message.channel.send(
-            `${result.product.name} has the following price history:\n${pricesString}`
+          const historyStringArray = [];
+          let previousPrice = 0;
+          for (let i = 0; i < result.product.pricePoints.length; i++) {
+            const pricePoint = result.product.pricePoints[i];
+            const thisPrice = string2int(pricePoint.price);
+
+            if (i === 0) {
+              historyStringArray.push(
+                `${result.product.name} has the following price history:`
+              );
+              historyStringArray.push(`(Current price): ${pricePoint.price}`);
+            } else if (thisPrice !== previousPrice) {
+              historyStringArray.push("...");
+              historyStringArray.push(
+                `(${pricePoint.createdAt}): ${pricePoint.price}`
+              );
+            }
+
+            previousPrice = string2int(pricePoint.price);
+          }
+          await splitMessageSend(
+            historyStringArray.join("\n"),
+            message.channel
           );
           break;
         case "name_missing":

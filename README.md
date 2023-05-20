@@ -6,7 +6,6 @@ A simple price tracking Discord bot using Node.js and
 TODO:
 
 - Product statistics (use some lib for this)
-- Price alerts
 
 ## Documentation
 

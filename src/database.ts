@@ -152,7 +152,7 @@ export const getProductWithFullHistory: GetProductWithFullHistory = async (
 
   const prices = (
     await databaseClient.query(
-      "SELECT price, created_at FROM PricePoints WHERE product_id=$1",
+      "SELECT price, created_at FROM PricePoints WHERE product_id=$1 ORDER BY created_at DESC",
       [product.id]
     )
   )?.rows.map((price) => {
