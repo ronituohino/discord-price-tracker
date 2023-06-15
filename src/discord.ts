@@ -8,7 +8,7 @@ import { update } from "./services/update.js";
 import { register } from "./services/register.js";
 import { list } from "./services/list.js";
 import { history } from "./services/history.js";
-import { splitMessageSend, string2int } from "./utils.js";
+import { productUpdatesString, splitMessageSend, string2int } from "./utils.js";
 
 type Params = {
   token: string;
@@ -50,7 +50,7 @@ export async function getChannel(discordClient: Client) {
 const commands = {
   "/help": "view this output",
   "/register": "create account to track products",
-  "/add {name}, {url}": "add product to track",
+  "/add {name}, {url}": "add product to track, notice the comma",
   "/remove {name}": "remove product from tracking",
   "/update": "manually update product prices",
   "/list": "list tracked products",
@@ -70,7 +70,7 @@ async function handleCommand(
         .map((key) => `${key} - ${commands[key]}`)
         .join("\n");
       message.channel.send(
-        `Welcome, the available commands are as follows:\n${commandsString}`
+        `Welcome, the available commands are as follows:\n\n${commandsString}`
       );
     },
     "/register": async () => {
@@ -101,6 +101,7 @@ async function handleCommand(
     "/add": async () => {
       const result = await add({
         databaseClient,
+        discordClient,
         discordId: message.author.id,
         name: params[0],
         url: params[1],
@@ -172,14 +173,24 @@ async function handleCommand(
     "/update": async () => {
       try {
         const result = await update({
-          databaseClient: databaseClient,
+          databaseClient,
+          discordClient,
           discordId: message.author.id,
         });
 
         switch (result.status) {
           case "success":
             if (result.amount && result.amount > 0) {
-              message.channel.send("Product prices updated.");
+              if (result.changed.length > 0) {
+                // Price updates
+                const productUpdateString = productUpdatesString(
+                  result.changed
+                );
+                const updateString = `Some of your tracked products' prices changed:\n${productUpdateString}`;
+                await splitMessageSend(updateString, message.channel);
+              } else {
+                message.channel.send("Product prices checked, no updates.");
+              }
             } else {
               message.channel.send("You aren't tracking any products.");
             }
@@ -187,11 +198,6 @@ async function handleCommand(
           case "not_registered":
             message.channel.send(
               `You need to /register and track something to update product prices.`
-            );
-            break;
-          case "unable_to_scrape":
-            message.channel.send(
-              `Update cancelled, unable to scrape ${result.product.name} from <${result.product.url}>`
             );
             break;
           case "error":

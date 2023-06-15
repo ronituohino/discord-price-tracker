@@ -4,7 +4,8 @@ A simple price tracking Discord bot using Node.js.
 
 TODO:
 
-- Product statistics (use some lib for this)
+- Product statistics with `/graph` (use some lib for this)
+- Update product url with `/newUrl`
 
 ## Documentation
 

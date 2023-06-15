@@ -10,13 +10,26 @@ export const jimms: Scraper = async (productPageUrl) => {
   const page = await result.text();
   const parsedHtml = parse(page);
   // meta tag unlikely to change in the near future
-  const price = parsedHtml
-    .querySelector("meta[property='product:price:amount']")
-    .getAttribute("content");
+  const element = parsedHtml.querySelector(
+    "meta[property='product:price:amount']"
+  );
+  if (element === null) {
+    const title = parsedHtml.querySelector("title").innerText;
+    if (title.includes("Tuotetta ei ")) {
+      return { status: "product_removed" };
+    } else {
+      return { status: "unable_to_scrape" };
+    }
+  }
+
+  const price = element.getAttribute("content");
+
+  if (!price) {
+  }
 
   if (price.includes(".")) {
-    return price.replace(".", ",") + "0 €";
+    return { status: "success", price: price.replace(".", ",") + "0 €" };
   } else {
-    return price + ",00 €";
+    return { status: "success", price: price + ",00 €" };
   }
 };

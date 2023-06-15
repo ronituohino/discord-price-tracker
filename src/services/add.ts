@@ -3,9 +3,13 @@ import { DataBaseClient, addPricePoint } from "../database.js";
 import { getProductPrice } from "../scrapers/index.js";
 import { addProduct } from "../database.js";
 import { getUserId } from "../database.js";
+import { notifyIfScrapingFailed } from "../utils.js";
+import { getChannel } from "../discord.js";
+import { Client } from "discord.js";
 
 type Params = {
   databaseClient: DataBaseClient;
+  discordClient: Client;
   discordId: string;
   name: string | undefined;
   url: string | undefined;
@@ -25,6 +29,7 @@ type Return = {
 
 export async function add({
   databaseClient,
+  discordClient,
   discordId,
   name,
   url,
@@ -42,14 +47,22 @@ export async function add({
       return { status: "not_registered" };
     }
 
-    const price = await getProductPrice(url);
+    const result = await getProductPrice(url);
 
-    if (!price) {
+    if (result.status !== "success") {
+      const channel = await getChannel(discordClient);
+      notifyIfScrapingFailed({
+        scrapingResult: result,
+        discordChannel: channel,
+        discordId,
+        productName: name,
+        productUrl: url,
+      });
       return { status: "unable_to_scrape" };
     }
 
     const productId = await addProduct(databaseClient, userId, name, url);
-    await addPricePoint(databaseClient, productId, price);
+    await addPricePoint(databaseClient, productId, result.price);
     return { status: "success" };
   } catch (error) {
     if (error.toString().startsWith("error: duplicate key")) {
